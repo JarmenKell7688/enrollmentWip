@@ -116,8 +116,8 @@ public class StudentProfile extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         wrapperPanel.add(cardPanel, gbc);
 
-        // Table for enrolled subjects
-        String[] columns = {"EDP Code", "Year Level", "Semester", "Subject", "Type", "Units", "Days", "Time", "Room", "Course"};
+        // Table for enrolled subjects with added Grade and Remarks columns
+        String[] columns = {"EDP Code", "Year Level", "Semester", "Subject", "Type", "Units", "Days", "Time", "Room", "Course", "Grade", "Remarks"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -161,7 +161,8 @@ public class StudentProfile extends JPanel {
             tableModel.addRow(new Object[]{
                 selectedSubject.getEdp(), selectedSubject.getYearLevel(), selectedSubject.getSemester(),
                 selectedSubject.getSubjectName(), selectedSubject.getType(), selectedSubject.getUnits(),
-                selectedSubject.getDays(), selectedSubject.getTime(), selectedSubject.getRoom(), selectedSubject.getCourse()
+                selectedSubject.getDays(), selectedSubject.getTime(), selectedSubject.getRoom(), selectedSubject.getCourse(),
+                "N/A", "N/A" // Placeholder values for Grade and Remarks
             });
         }
 
