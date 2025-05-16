@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 
 public class TeacherMaker extends JPanel {
     private JTextField teacherIdField, teacherNameField, teacherPasswordField;
+    private JComboBox<String> subjectComboBox; // New combo box for subjects
     private DefaultTableModel tableModel;
     private JTable teacherTable;
     private LoginUI loginUI;
@@ -25,7 +26,7 @@ public class TeacherMaker extends JPanel {
 
     private void initializeComponents() {
         // Input panel for teacher data
-        JPanel inputPanel = new JPanel(new GridLayout(3, 2, 15, 15));
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 15, 15)); // Adjusted to 4 rows for the new combo box
         inputPanel.setBackground(new Color(220, 230, 240));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -65,15 +66,31 @@ public class TeacherMaker extends JPanel {
         ));
         teacherPasswordField.setPreferredSize(new Dimension(300, 40));
 
+        // New combo box for subjects
+        JLabel subjectLabel = new JLabel("Assign Subject:");
+        subjectLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        subjectLabel.setForeground(new Color(50, 50, 80));
+        subjectComboBox = new JComboBox<>();
+        subjectComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        subjectComboBox.setBackground(new Color(240, 245, 250));
+        subjectComboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(150, 180, 210), 2, true),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        subjectComboBox.setPreferredSize(new Dimension(300, 40));
+        populateSubjectComboBox(); // Populate the combo box with subjects
+
         inputPanel.add(idLabel);
         inputPanel.add(teacherIdField);
         inputPanel.add(nameLabel);
         inputPanel.add(teacherNameField);
         inputPanel.add(passwordLabel);
         inputPanel.add(teacherPasswordField);
+        inputPanel.add(subjectLabel);
+        inputPanel.add(subjectComboBox);
 
-        // Table setup
-        String[] columns = {"ID", "Teacher Name", "Password"};
+        // Table setup with new "Assigned Subject" column
+        String[] columns = {"ID", "Teacher Name", "Password", "Assigned Subject"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -147,10 +164,28 @@ public class TeacherMaker extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    private void populateSubjectComboBox() {
+        subjectComboBox.removeAllItems();
+        subjectComboBox.addItem("None"); // Option to not assign a subject
+        for (DataStore.SubjectData subject : DataStore.getSubjects()) {
+            subjectComboBox.addItem(subject.getEdp() + " - " + subject.getSubjectName());
+        }
+        subjectComboBox.setSelectedIndex(0); // Default to "None"
+    }
+
     private void loadTeacherData() {
         tableModel.setRowCount(0); // Clear existing rows
         for (DataStore.TeacherData teacher : DataStore.getTeachers()) {
-            tableModel.addRow(new Object[]{teacher.id, teacher.name, teacher.password});
+            String subjectDisplay = "None";
+            if (teacher.getSubjectEdp() != null) {
+                for (DataStore.SubjectData subject : DataStore.getSubjects()) {
+                    if (subject.getEdp() == teacher.getSubjectEdp()) {
+                        subjectDisplay = teacher.getSubjectEdp() + " - " + subject.getSubjectName();
+                        break;
+                    }
+                }
+            }
+            tableModel.addRow(new Object[]{teacher.id, teacher.name, teacher.password, subjectDisplay});
         }
     }
 
@@ -158,11 +193,24 @@ public class TeacherMaker extends JPanel {
         String teacherId = teacherIdField.getText().trim();
         String teacherName = teacherNameField.getText().trim();
         String teacherPassword = teacherPasswordField.getText().trim();
+        String selectedSubject = (String) subjectComboBox.getSelectedItem();
+        Integer subjectEdp = null;
 
         // Validate inputs
         if (teacherId.isEmpty() || teacherName.isEmpty() || teacherPassword.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill in all fields", "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
+        }
+
+        // Parse the selected subject to extract the EDP code
+        if (selectedSubject != null && !selectedSubject.equals("None")) {
+            String[] parts = selectedSubject.split(" - ");
+            try {
+                subjectEdp = Integer.parseInt(parts[0]);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid EDP code in selected subject", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         // Check for duplicate ID
@@ -172,7 +220,7 @@ public class TeacherMaker extends JPanel {
         }
 
         // Add to DataStore
-        DataStore.addTeacher(new DataStore.TeacherData(teacherId, teacherName, teacherPassword));
+        DataStore.addTeacher(new DataStore.TeacherData(teacherId, teacherName, teacherPassword, subjectEdp));
         loadTeacherData();
         clearFields();
         JOptionPane.showMessageDialog(this, "Teacher saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -197,6 +245,7 @@ public class TeacherMaker extends JPanel {
         teacherIdField.setText("");
         teacherNameField.setText("");
         teacherPasswordField.setText("");
+        subjectComboBox.setSelectedIndex(0); // Reset to "None"
     }
 
     public JPanel getMainPanel() {
