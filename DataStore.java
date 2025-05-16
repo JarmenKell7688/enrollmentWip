@@ -11,11 +11,13 @@ public class DataStore {
     private static final List<TeacherData> teachers = new ArrayList<>();
     private static final List<SubjectData> subjects = new ArrayList<>();
     private static final String SUBJECTS_FILE = "subjects.dat";
-    private static final String STUDENTS_FILE = "students.dat"; // Added file for students
+    private static final String STUDENTS_FILE = "students.dat";
+    private static final String TEACHERS_FILE = "teachers.dat"; // New file for teachers
 
     static {
         loadSubjectsFromFile();
-        loadStudentsFromFile(); // Load students on startup
+        loadStudentsFromFile();
+        loadTeachersFromFile(); // Load teachers on startup
     }
 
     public static void addStudent(StudentData student) {
@@ -44,6 +46,7 @@ public class DataStore {
 
     public static void addTeacher(TeacherData teacher) {
         teachers.add(teacher);
+        saveTeachersToFile(); // Save after adding a teacher
     }
 
     public static List<TeacherData> getTeachers() {
@@ -56,6 +59,7 @@ public class DataStore {
 
     public static void deleteTeacher(String teacherId) {
         teachers.removeIf(teacher -> teacher.id.equals(teacherId));
+        saveTeachersToFile(); // Save after deletion
     }
 
     public static void addSubject(SubjectData subject) {
@@ -124,12 +128,36 @@ public class DataStore {
         }
     }
 
+    private static void saveTeachersToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(TEACHERS_FILE))) {
+            oos.writeObject(teachers);
+        } catch (IOException e) {
+            System.err.println("Error saving teachers to file: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void loadTeachersFromFile() {
+        File file = new File(TEACHERS_FILE);
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(TEACHERS_FILE))) {
+                Object obj = ois.readObject();
+                if (obj instanceof List) {
+                    teachers.clear();
+                    teachers.addAll((List<TeacherData>) obj);
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                System.err.println("Error loading teachers from file: " + e.getMessage());
+            }
+        }
+    }
+
     public static class TeacherData implements Serializable {
         private static final long serialVersionUID = 1L;
         public final String id;
         public final String name;
         public final String password;
-        public final Integer subjectEdp; // New field to store the assigned subject's EDP code
+        public final Integer subjectEdp;
 
         public TeacherData(String id, String name, String password, Integer subjectEdp) {
             this.id = id;
@@ -138,7 +166,6 @@ public class DataStore {
             this.subjectEdp = subjectEdp;
         }
 
-        // Getter for subjectEdp
         public Integer getSubjectEdp() {
             return subjectEdp;
         }
