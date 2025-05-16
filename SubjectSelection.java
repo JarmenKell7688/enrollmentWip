@@ -8,6 +8,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -15,15 +17,23 @@ public class SubjectSelection extends JPanel {
     private DefaultTableModel tableModel;
     private JTable subjectTable;
     private MainApplication mainApp;
-    private StudentData student; // Added field for StudentData
+    private StudentData student;
+    private JLabel noSubjectsLabel; // Added label for no subjects message
 
-    // Updated constructor to accept MainApplication and StudentData
     public SubjectSelection(MainApplication mainApp, StudentData student) {
         this.mainApp = mainApp;
         this.student = student;
         setLayout(new BorderLayout());
         setBackground(new Color(200, 210, 220));
         initializeComponents();
+
+        // Add ComponentListener to refresh data when the panel becomes visible
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refresh();
+            }
+        });
     }
 
     private void initializeComponents() {
@@ -65,11 +75,17 @@ public class SubjectSelection extends JPanel {
             }
         });
 
-        loadSubjectData();
-
         JScrollPane tableScrollPane = new JScrollPane(subjectTable);
         tableScrollPane.setBorder(BorderFactory.createLineBorder(new Color(150, 180, 210), 2));
         add(tableScrollPane, BorderLayout.CENTER);
+
+        // Add a label for when no subjects are available
+        noSubjectsLabel = new JLabel("No subjects available for your course and year level.");
+        noSubjectsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        noSubjectsLabel.setForeground(new Color(200, 50, 50)); // Red color for visibility
+        noSubjectsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        noSubjectsLabel.setVisible(false); // Initially hidden
+        add(noSubjectsLabel, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         buttonPanel.setBackground(new Color(200, 210, 220));
@@ -84,21 +100,34 @@ public class SubjectSelection extends JPanel {
         buttonPanel.add(returnButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
+
+        loadSubjectData(); // Initial load
     }
 
     private void loadSubjectData() {
         tableModel.setRowCount(0);
-        // Filter subjects based on the student's course and year level
-        for (DataStore.SubjectData subject : DataStore.getSubjects()) {
-            if (student != null &&
-                subject.getCourse().equals(student.getCourse()) &&
-                subject.getYearLevel() == student.getYearLevel()) {
-                tableModel.addRow(new Object[]{
-                        subject.getEdp(), subject.getYearLevel(), subject.getSemester(), subject.getSubjectName(),
-                        subject.getType(), subject.getUnits(), subject.getDays(), subject.getTime(), subject.getRoom(), subject.getCourse()
-                });
+        // Update student from mainApp to ensure we have the latest enrolled student
+        this.student = mainApp.getEnrolledStudent();
+        boolean hasMatchingSubjects = false;
+        if (student != null) {
+            for (DataStore.SubjectData subject : DataStore.getSubjects()) {
+                if (subject.getCourse().equals(student.getCourse()) &&
+                    subject.getYearLevel() == student.getYearLevel()) {
+                    tableModel.addRow(new Object[]{
+                            subject.getEdp(), subject.getYearLevel(), subject.getSemester(), subject.getSubjectName(),
+                            subject.getType(), subject.getUnits(), subject.getDays(), subject.getTime(), subject.getRoom(), subject.getCourse()
+                    });
+                    hasMatchingSubjects = true;
+                }
             }
         }
+        // Show or hide the "no subjects" message based on whether matching subjects were found
+        noSubjectsLabel.setVisible(!hasMatchingSubjects);
+        subjectTable.setVisible(hasMatchingSubjects);
+    }
+
+    private void refresh() {
+        loadSubjectData();
     }
 
     private void handleSelect() {
