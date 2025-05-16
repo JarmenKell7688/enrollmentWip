@@ -8,6 +8,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -21,6 +23,14 @@ public class EnrolleesUI extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(200, 210, 220));
         initializeComponents();
+
+        // Add a ComponentListener to refresh the table when the panel becomes visible
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refresh();
+            }
+        });
     }
 
     private void initializeComponents() {
@@ -103,6 +113,10 @@ public class EnrolleesUI extends JPanel {
                     student.getStudentId() != null ? student.getStudentId() : ""
             });
         }
+    }
+
+    public void refresh() {
+        loadStudentData();
     }
 
     private void saveStudentIDs() {
