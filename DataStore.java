@@ -12,17 +12,21 @@ public class DataStore {
     private static final List<SubjectData> subjects = new ArrayList<>();
     private static final String SUBJECTS_FILE = "subjects.dat";
     private static final String STUDENTS_FILE = "students.dat";
-    private static final String TEACHERS_FILE = "teachers.dat"; // New file for teachers
+    private static final String TEACHERS_FILE = "teachers.dat";
 
     static {
         loadSubjectsFromFile();
         loadStudentsFromFile();
-        loadTeachersFromFile(); // Load teachers on startup
+        loadTeachersFromFile();
+        // Removed the automatic removal of student with ID "s29"
+        saveTeachersToFile();
+        saveSubjectsToFile();
+        saveStudentsToFile();
     }
 
     public static void addStudent(StudentData student) {
         students.add(student);
-        saveStudentsToFile(); // Save after adding a student
+        saveStudentsToFile();
     }
 
     public static List<StudentData> getStudents() {
@@ -31,22 +35,38 @@ public class DataStore {
 
     public static void deleteStudent(String studentId) {
         students.removeIf(student -> student.getStudentId() != null && student.getStudentId().equals(studentId));
-        saveStudentsToFile(); // Save after deletion
+        saveStudentsToFile();
     }
 
     public static void updateStudentId(String name, String email, String studentId) {
+        // Validate that studentId contains only digits
+        if (!studentId.matches("^[0-9]+$")) {
+            throw new IllegalArgumentException("Student ID must contain only numbers.");
+        }
         for (StudentData student : students) {
             if (student.getName().equals(name) && student.getEmail().equals(email)) {
                 student.setStudentId(studentId);
                 break;
             }
         }
-        saveStudentsToFile(); // Save after updating student ID
+        saveStudentsToFile();
+    }
+
+    public static void updateStudent(StudentData updatedStudent) {
+        for (int i = 0; i < students.size(); i++) {
+            StudentData student = students.get(i);
+            if (student.getEmail().equals(updatedStudent.getEmail()) && 
+                student.getName().equals(updatedStudent.getName())) {
+                students.set(i, updatedStudent);
+                saveStudentsToFile();
+                break;
+            }
+        }
     }
 
     public static void addTeacher(TeacherData teacher) {
         teachers.add(teacher);
-        saveTeachersToFile(); // Save after adding a teacher
+        saveTeachersToFile();
     }
 
     public static List<TeacherData> getTeachers() {
@@ -59,7 +79,7 @@ public class DataStore {
 
     public static void deleteTeacher(String teacherId) {
         teachers.removeIf(teacher -> teacher.id.equals(teacherId));
-        saveTeachersToFile(); // Save after deletion
+        saveTeachersToFile();
     }
 
     public static void addSubject(SubjectData subject) {
@@ -104,7 +124,7 @@ public class DataStore {
         }
     }
 
-    private static void saveStudentsToFile() {
+    public static void saveStudentsToFile() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(STUDENTS_FILE))) {
             oos.writeObject(students);
         } catch (IOException e) {

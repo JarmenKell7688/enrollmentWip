@@ -27,10 +27,10 @@ public class LoginMechanics implements ActionListener {
                     cardLayout.show(cardPanel, "Student Dashboard");
                     break;
                 case "teacher":
-                    cardLayout.show(cardPanel, "Teacher Interface");
+                    cardLayout.show(cardPanel, "Teacher Login");
                     break;
                 case "admin":
-                    cardLayout.show(cardPanel, "Admin Choice");
+                    cardLayout.show(cardPanel, "Admin Security");
                     break;
                 default:
                     JOptionPane.showMessageDialog(loginUI, "Please select a valid role.", "Error", JOptionPane.ERROR_MESSAGE);

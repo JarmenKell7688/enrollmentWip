@@ -64,7 +64,7 @@ public class AdminTrappings {
         unitsField = new JTextField(15);
         roomField = new JTextField(15);
         dayField = new JTextField(15);
-        courseChoice = new JComboBox<>(new String[]{"BSIT", "BSIS", "BSA"});
+        courseChoice = new JComboBox<>(new String[]{"BSIT", "BSN", "BSA"});
         classType = new JComboBox<>(new String[]{"LEC", "LAB"});
         yearLevel = new JComboBox<>(new String[]{"1", "2", "3", "4"});
         semester = new JComboBox<>(new String[]{"1", "2"});

@@ -120,16 +120,31 @@ public class EnrolleesUI extends JPanel {
     }
 
     private void saveStudentIDs() {
+        boolean allValid = true;
         for (int row = 0; row < tableModel.getRowCount(); row++) {
             String name = (String) tableModel.getValueAt(row, 0);
             String email = (String) tableModel.getValueAt(row, 1);
             String studentID = (String) tableModel.getValueAt(row, 4);
 
             if (studentID != null && !studentID.trim().isEmpty()) {
+                // Validate that studentID contains only digits
+                if (!studentID.trim().matches("^[0-9]+$")) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Student ID for " + name + " must contain only numbers.", 
+                        "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                    allValid = false;
+                    continue; // Skip this student but continue checking others
+                }
                 DataStore.updateStudentId(name, email, studentID.trim());
             }
         }
-        JOptionPane.showMessageDialog(this, "Student IDs saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        if (allValid) {
+            JOptionPane.showMessageDialog(this, "Student IDs saved successfully!", 
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Some Student IDs were not saved due to invalid input.", 
+                "Warning", JOptionPane.WARNING_MESSAGE);
+        }
         loadStudentData(); // Refresh the table
     }
 

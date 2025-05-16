@@ -8,8 +8,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 public class StudentProfile extends JPanel {
     private MainApplication mainApp;
@@ -23,40 +23,38 @@ public class StudentProfile extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(200, 210, 220));
         initializeComponents();
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refreshTable(); // Ensure table refreshes when panel is shown
+            }
+        });
     }
 
     private void initializeComponents() {
-        // Fetch the enrolled student
         east.Student.StudentData student = mainApp.getEnrolledStudent();
 
-        // Card panel for student info
         JPanel cardPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Draw shadow
                 g2d.setColor(new Color(0, 0, 0, 50));
                 g2d.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, 15, 15);
-
-                // Draw card background
                 g2d.setColor(Color.WHITE);
                 g2d.fillRoundRect(0, 0, getWidth() - 10, getHeight() - 10, 15, 15);
-
-                // Draw border
                 g2d.setColor(new Color(150, 180, 210));
                 g2d.drawRoundRect(0, 0, getWidth() - 10, getHeight() - 10, 15, 15);
                 g2d.dispose();
             }
         };
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
-        cardPanel.setBackground(new Color(0, 0, 0, 0)); // Transparent background for custom painting
+        cardPanel.setBackground(new Color(0, 0, 0, 0));
         cardPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        cardPanel.setPreferredSize(new Dimension(0, 250)); // Fixed height for the card
+        cardPanel.setPreferredSize(new Dimension(0, 250));
 
-        // Title label
         JLabel titleLabel = new JLabel("Student Profile");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(50, 50, 80));
@@ -64,7 +62,6 @@ public class StudentProfile extends JPanel {
         cardPanel.add(titleLabel);
         cardPanel.add(Box.createVerticalStrut(15));
 
-        // Student information labels with consistent styling
         Font infoFont = new Font("Segoe UI", Font.PLAIN, 16);
         if (student == null) {
             JLabel noDataLabel = new JLabel("No student data available.");
@@ -103,7 +100,6 @@ public class StudentProfile extends JPanel {
             cardPanel.add(studentIdLabel);
         }
 
-        // Wrapper panel to center the card with padding
         JPanel wrapperPanel = new JPanel(new GridBagLayout());
         wrapperPanel.setBackground(new Color(200, 210, 220));
         wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -116,7 +112,6 @@ public class StudentProfile extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         wrapperPanel.add(cardPanel, gbc);
 
-        // Table for enrolled subjects with added Grade and Remarks columns
         String[] columns = {"EDP Code", "Year Level", "Semester", "Subject", "Type", "Units", "Days", "Time", "Room", "Course", "Grade", "Remarks"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -155,37 +150,52 @@ public class StudentProfile extends JPanel {
             }
         });
 
-        // Load the selected subject
-        DataStore.SubjectData selectedSubject = subjectSelection.getSelectedSubject();
-        if (selectedSubject != null) {
-            tableModel.addRow(new Object[]{
-                selectedSubject.getEdp(), selectedSubject.getYearLevel(), selectedSubject.getSemester(),
-                selectedSubject.getSubjectName(), selectedSubject.getType(), selectedSubject.getUnits(),
-                selectedSubject.getDays(), selectedSubject.getTime(), selectedSubject.getRoom(), selectedSubject.getCourse(),
-                "N/A", "N/A" // Placeholder values for Grade and Remarks
-            });
-        }
+        refreshTable();
 
         JScrollPane tableScrollPane = new JScrollPane(enrolledSubjectsTable);
         tableScrollPane.setBorder(BorderFactory.createLineBorder(new Color(150, 180, 210), 2));
 
-        // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         buttonPanel.setBackground(new Color(200, 210, 220));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
 
-        JButton returnButton = new JButton("Return");
-        returnButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                mainApp.getCardLayout().show(mainApp.getCardPanel(), "Login"); // Navigate to Login panel
-            }
-        });
-        buttonPanel.add(returnButton);
+        JButton selectMoreButton = new JButton("Select More Subjects");
+        selectMoreButton.addActionListener(e -> mainApp.getCardLayout().show(mainApp.getCardPanel(), "Subject Selection"));
+        buttonPanel.add(selectMoreButton);
 
-        // Add components to the main panel
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> {
+            mainApp.getCardLayout().show(mainApp.getCardPanel(), "Login");
+            // Clear the enrolled student data
+            mainApp.getEnrolledStudent();
+            mainApp.setEnrolledStudent(null);
+        });
+        buttonPanel.add(logoutButton);
+
         add(wrapperPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    public void refreshTable() {
+        tableModel.setRowCount(0);
+        StudentData student = mainApp.getEnrolledStudent();
+        if (student != null) {
+            for (Integer edpCode : student.getEnrolledSubjectEdps()) {
+                for (DataStore.SubjectData subject : DataStore.getSubjects()) {
+                    if (subject.getEdp() == edpCode) {
+                        Double grade = student.getGrades().getOrDefault(edpCode, null);
+                        String gradeStr = grade != null ? String.format("%.1f", grade) : "N/A";
+                        String remarks = grade != null ? (grade >= 1.0 && grade <= 3.0 ? "PASSED" : "FAILED") : "N/A";
+                        tableModel.addRow(new Object[]{
+                            subject.getEdp(), subject.getYearLevel(), subject.getSemester(),
+                            subject.getSubjectName(), subject.getType(), subject.getUnits(),
+                            subject.getDays(), subject.getTime(), subject.getRoom(), subject.getCourse(),
+                            gradeStr, remarks
+                        });
+                    }
+                }
+            }
+        }
     }
 }
